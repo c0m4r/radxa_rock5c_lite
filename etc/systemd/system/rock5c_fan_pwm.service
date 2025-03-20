@@ -1,0 +1,12 @@
+[Unit]
+Description=rock5c_fan_pwm
+
+[Service]
+Type=simple
+User=root
+Group=root
+ExecStart=/usr/local/bin/rock5c_fan_pwm
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

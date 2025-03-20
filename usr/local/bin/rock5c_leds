@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+##########################################################
+# Radxa Rock 5C LEDs triggers
+# Author: https:///github.com/c0m4r
+# License: Public Domain
+##########################################################
+
+if [[ -d /sys/devices/platform/gpio-leds/leds/user-led2 ]]; then
+    echo "mmc1" > /sys/devices/platform/gpio-leds/leds/user-led2/trigger
+elif [[ -d /sys/devices/platform/leds/leds ]]; then
+    echo "default-on" > /sys/devices/platform/leds/leds/user-led/trigger
+    echo "activity" > /sys/devices/platform/leds/leds/blue\:status/trigger
+else
+    echo "no LEDs found :("
+fi

@@ -1,0 +1,127 @@
+#!/bin/bash
+
+##########################################################
+# Radxa Rock 5C fan PWM control script
+# Author: https:///github.com/c0m4r
+# License: Public Domain
+##########################################################
+
+# PWM control path
+PWM_PATH="/sys/devices/platform/pwm-fan/hwmon"
+
+# Configuration
+INTERVAL=10         # Temperature check interval (seconds)
+FAN_OFF=1           # 1 = turn off fan below MIN_TEMP after cooldown, 0 = keep at min RPM
+COOLDOWN=300        # time to wait before turning off the fan when FAN_OFF=1
+
+# Critical temp protection
+POWEROFF_ON_CRIT=1  # 1 = shutdown when the temperature reaches a critical value, 0 = disable
+CRITICAL_TEMP=70    # Critical temperature (shutdown)
+
+# PWM Values (proper)
+SAFE_PWM_MIN=105    # Safe minimum PWM to keep fan spinning
+PWM_LOW=125         # 45–50°C (~50% speed)
+PWM_MID=165         # 50–55°C (~65% speed)
+PWM_HIGH=200        # 55–60°C (~80% speed)
+PWM_MAX=255         # >60°C (100% speed)
+
+# PWM Values (temporary - use these instead of proper if the fan spins at max all the time)
+#SAFE_PWM_MIN=50    # Safe minimum PWM to keep fan spinning
+#PWM_LOW=60         # 45–50°C (~50% speed)
+#PWM_MID=70         # 50–55°C (~65% speed)
+#PWM_HIGH=80        # 55–60°C (~80% speed)
+#PWM_MAX=255         # >60°C (100% speed)
+
+# Constants (requires also changes in code)
+MIN_TEMP=47         # Minimum temperature (PWM_MIN)
+MAX_TEMP=60         # Maximum temperature (PWM_MAX)
+
+
+# Set thermal policy
+thermal_zones=$(ls -1 /sys/class/thermal | grep thermal_zone)
+
+if [[ "$thermal_zones" ]]; then
+  for i in /sys/class/thermal/thermal_zone*/policy ; do
+    echo "user_space" > "$i"
+  done
+else
+  echo "No sensors found, check kernel support, setting fan to high for now!"
+  echo $PWM_HIGH > ${PWM_PATH}/hwmon*/pwm1
+  exit 1
+fi
+
+# Set PWM_MIN based on FAN_OFF mode
+if [ "$FAN_OFF" -eq 1 ]; then
+  PWM_MIN=0 # Allow fan to turn off after cooldown
+else
+  PWM_MIN=$SAFE_PWM_MIN # Keep fan at minimal safe RPM all the time
+fi
+
+# Validate PWM path
+if [ ! -d "$PWM_PATH" ]; then
+  echo "Error: PWM control file not found: $PWM_PATH"
+  exit 1
+fi
+
+# Initialize variables
+current_pwm=$(cat ${PWM_PATH}/hwmon*/pwm1) # Start at current PWM
+last_high_temp_time=0 # Track last high temp for cooldown
+echo "Initializing fan at PWM $current_pwm"
+echo "$current_pwm" > ${PWM_PATH}/hwmon*/pwm1
+
+# Main loop
+while true; do
+  # Get highest temperature (in °C)
+  temp=$(cat /sys/class/thermal/thermal_zone*/temp | xargs -I{} expr {} / 1000 | sort -nr | head -n 1)
+
+  # Critical temperature handling
+  if [ "$POWEROFF_ON_CRIT" -eq 1 ] && [ "$temp" -ge "$CRITICAL_TEMP" ]; then
+    echo "Critical temperature reached: ${temp}°C. Shutting down in 10 seconds..."
+    sleep 10
+    shutdown -h now  # Power off the system
+    exit 0
+  fi
+
+  # Update last high temp timestamp if above cooldown threshold
+  if [ "$temp" -ge $MIN_TEMP ]; then
+    last_high_temp_time=$(date +%s)
+  fi
+
+  # Determine target PWM
+  if [ "$temp" -ge $MAX_TEMP ]; then
+    target_pwm=$PWM_MAX
+  elif [ "$temp" -ge 55 ] && [ "$current_pwm" -lt $PWM_HIGH ]; then
+    target_pwm=$PWM_HIGH
+  elif [ "$temp" -ge 50 ] && [ "$current_pwm" -lt $PWM_MID ]; then
+    target_pwm=$PWM_MID
+  elif [ "$temp" -ge 47 ] && [ "$current_pwm" -lt $PWM_LOW ]; then
+    target_pwm=$PWM_LOW
+  elif [ "$temp" -lt 47 ]; then
+    # Handle cooldown logic only if FAN_OFF=1
+    if [ "$FAN_OFF" -eq 1 ]; then
+      current_time=$(date +%s)
+      time_since_high=$((current_time - last_high_temp_time))
+
+      if [ "$time_since_high" -ge "$COOLDOWN" ]; then
+        target_pwm=$PWM_MIN # after cooldown
+      else
+        target_pwm=$SAFE_PWM_MIN # during cooldown
+      fi
+    else
+      target_pwm=$PWM_MIN # if FAN_OFF=0
+    fi
+  else
+    target_pwm=$current_pwm # No change
+  fi
+
+  # Apply PWM changes if needed
+  if [ "$target_pwm" -ne "$current_pwm" ]; then
+    echo "Temp: ${temp}°C | PWM: $current_pwm → $target_pwm 🌡️"
+    echo "$target_pwm" > ${PWM_PATH}/hwmon*/pwm1
+    current_pwm=$target_pwm
+  else
+    echo "Temp: ${temp}°C | PWM: $current_pwm"
+  fi
+
+  sleep "$INTERVAL"
+done
