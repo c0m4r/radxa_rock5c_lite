@@ -1,5 +1,7 @@
 [Unit]
 Description=rock5c_fan_pwm
+Requires=multi-user.target
+After=multi-user.target
 
 [Service]
 Type=simple
