@@ -22,7 +22,6 @@ class OledI2C:
         self.width = 128
         self.height = 32  # Adjusted for 128x32 display
         self.font = ImageFont.truetype("/usr/share/fonts/truetype/pixelmix.ttf", 8)  # Adjusted font size
-        self.font2 = ImageFont.truetype("/usr/share/fonts/truetype/pixelmix.ttf", 8)  # Adjusted font size
 
         self.initialize_oled()
 
