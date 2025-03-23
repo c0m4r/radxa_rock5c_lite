@@ -5,6 +5,8 @@ Author: Deepseek R1 + https://github.com/c0m4r
 License: Public Domain
 """
 
+from time import sleep
+
 from periphery import I2C
 from PIL import Image, ImageDraw
 
@@ -149,7 +151,7 @@ if __name__ == "__main__":
         oled.draw_heart()
         # Keep display active until interrupted
         while True:
-            pass
+            sleep(1)
     except KeyboardInterrupt:
         print("bye")
         oled.clear_display()
