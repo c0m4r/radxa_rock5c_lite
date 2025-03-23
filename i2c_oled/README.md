@@ -1,5 +1,7 @@
 # I2C OLED 128x32 scripts
 
+Tested on Radxa OS / Debian 12 (bookworm) | Python 3.11
+
 ## How to
 
 Connect OLED SDA/SCL to Pins 3/5, choose pin 1 or 17 for 3.3V and any ground pins. Don't connect anything to the red +5V or else you gonna fry the OLED module.
@@ -25,10 +27,9 @@ apt install python3-venv python3-wheel python3-pip
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-chmod 755 i2c_oled_text_sequence.py
-./i2c_oled_text_sequence.py
-./i2c_oled_heart.py
 ```
+
+Internet radio script also depends on `libportaudio2`, `mpv` and `pulseaudio` (or another sound server) and possibly `ffmpeg`.
 
 ### Notes
 
