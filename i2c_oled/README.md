@@ -4,6 +4,7 @@ Tested on Radxa OS / Debian 12 (bookworm) | Python 3.11
 
 | script | description |
 | ---- | ---- |
+| i2c_oled_clock.py | Full display clock (HH:MM:SS) |
 | i2c_oled_heart.py | draws a heart in the center of the display |
 | i2c_oled_internet_radio.py | let's you listen to the internet radio and prints icy-title on the display |
 | i2c_oled_monitoring.sh | system monitoring (temperature, CPU/MEM usage, current IP address, time, etc. |
