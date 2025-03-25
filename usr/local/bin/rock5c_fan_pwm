@@ -71,6 +71,10 @@ echo "$current_pwm" > ${PWM_PATH}/hwmon*/pwm1
 
 # Main loop
 while true; do
+  for i in /sys/class/thermal/thermal_zone*/policy ; do
+    echo "user_space" > "$i"
+  done
+
   # Get highest temperature (in °C)
   temp=$(cat /sys/class/thermal/thermal_zone*/temp | xargs -I{} expr {} / 1000 | sort -nr | head -n 1)
 
