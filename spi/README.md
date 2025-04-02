@@ -13,3 +13,14 @@ source venv/bin/activate
 pip install Pillow numpy spidev gpiod
 python3 display_st7789_v4.py --image example.jpg  --dc-pin 140 --rst-pin 37 --gpio-chip-dc /dev/gpiochip4 --gpio-chip-rst /dev/gpiochip1
 ```
+
+Overlay: /boot/dtbo/rk3588-spi0-m1-cs0-spidev.dtbo
+
+Debug:
+
+```bash
+dmesg | grep -i spi
+gpiodetect
+gpioinfo
+ls -la /dev/spidev0.0
+```
